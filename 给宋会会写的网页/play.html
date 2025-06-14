@@ -9,6 +9,7 @@
     <div class="music-player">
         <audio id="audio-player" autoplay loop>
             <source src="./resouce/有些-颜人中.mp3" type="audio/mpeg">
+            <source src="./resouce/always online.mp3" type="audio/mpeg">
         </audio>
         
         <div class="player-container">
@@ -43,35 +44,20 @@
     </div>
 
     <div id="box">
-        <img src="./resouce/center.jpg" data-video="video1.mp4">
-        <img src="./resouce/1.jpg" data-video="video2.mp4">
-        <img src="./resouce/2.jpg" data-video="video3.mp4">
-        <img src="./resouce/3.jpg" data-video="video4.mp4">
-        <img src="./resouce/4.jpg" data-video="video5.mp4">
-        <img src="./resouce/5.jpg" data-video="video6.mp4">
-        <img src="./resouce/6.jpg" data-video="video7.mp4">
-        <img src="./resouce/7.jpg" data-video="video8.mp4">
-        <img src="./resouce/8.jpg" data-video="video9.mp4">
-        <img src="./resouce/9.jpg" data-video="video10.mp4">
+        <img src="./resouce/center.jpg">
+        <img src="./resouce/1.jpg">
+        <img src="./resouce/2.jpg">
+        <img src="./resouce/3.jpg">
+        <img src="./resouce/4.jpg">
+        <img src="./resouce/5.jpg">
+        <img src="./resouce/6.jpg">
+        <img src="./resouce/7.jpg">
+        <img src="./resouce/8.jpg">
+        <img src="./resouce/9.jpg">
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // === 1. 恢复音频状态（放在开头） ===
-            const savedAudioState = localStorage.getItem('audioState');
-            if (savedAudioState) {
-                const audioData = JSON.parse(savedAudioState);
-                audioPlayer.currentTime = audioData.currentTime;
-                audioPlayer.volume = audioData.volume;
-                
-                if (audioData.isPlaying) {
-                    audioPlayer.play();
-                    playerContainer.classList.add('playing');
-                    playPauseBtn.textContent = '⏸';
-                }
-                localStorage.removeItem('audioState');
-            }
-
             // 获取DOM元素
             const audioPlayer = document.getElementById('audio-player');
             const playPauseBtn = document.getElementById('play-pause-btn');
@@ -86,28 +72,50 @@
             const vinylEl = document.querySelector('.vinyl');
             
             // 音乐信息
-            const songInfo = {
-                title: "Beautiful Day",
-                artist: "Unknown Artist",
-                cover: "./resouce/cover.jpg"
-            };
+            const songs = [
+                {
+                    title: "有些",
+                    artist: "颜人中",
+                    cover: "./resouce/cover.jpg",
+                    src: "./resouce/有些-颜人中.mp3"
+                },
+                {
+                    title: "Always Online",
+                    artist: "林俊杰",
+                    cover: "./resouce/cover.jpg",
+                    src: "./resouce/always online.mp3"
+                }
+            ];
+            
+            let currentSongIndex = 0;
             
             // 更新音乐信息
-            songTitleEl.textContent = songInfo.title;
-            artistNameEl.textContent = songInfo.artist;
-            coverArtEl.src = songInfo.cover;
-            
-            // 自动播放处理
-            audioPlayer.muted = false;
-            const playPromise = audioPlayer.play();
-            
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.log("自动播放被阻止，等待用户交互");
-                    playerContainer.classList.remove('playing');
-                    playPauseBtn.textContent = '▶';
-                });
+            function updateSongInfo() {
+                const song = songs[currentSongIndex];
+                songTitleEl.textContent = song.title;
+                artistNameEl.textContent = song.artist;
+                coverArtEl.src = song.cover;
+                audioPlayer.src = song.src;
             }
+            
+            // 初始化第一首歌
+            updateSongInfo();
+            
+            // 初始化播放器状态
+            audioPlayer.muted = false;
+            playerContainer.classList.remove('playing');
+            playPauseBtn.textContent = '▶';
+            
+            // 添加提示信息
+            const tip = document.createElement('div');
+            tip.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 5px; z-index: 1000;';
+            tip.textContent = '点击播放按钮开始播放音乐';
+            document.body.appendChild(tip);
+            
+            // 3秒后自动移除提示
+            setTimeout(() => {
+                tip.remove();
+            }, 3000);
             
             // 播放/暂停控制
             playPauseBtn.addEventListener('click', function() {
@@ -120,6 +128,24 @@
                     playerContainer.classList.remove('playing');
                     playPauseBtn.textContent = '▶';
                 }
+            });
+            
+            // 下一首按钮控制
+            document.getElementById('next-btn').addEventListener('click', function() {
+                currentSongIndex = (currentSongIndex + 1) % songs.length;
+                updateSongInfo();
+                audioPlayer.play();
+                playerContainer.classList.add('playing');
+                playPauseBtn.textContent = '⏸';
+            });
+            
+            // 上一首按钮控制
+            document.getElementById('prev-btn').addEventListener('click', function() {
+                currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+                updateSongInfo();
+                audioPlayer.play();
+                playerContainer.classList.add('playing');
+                playPauseBtn.textContent = '⏸';
             });
             
             // 进度条更新
@@ -165,13 +191,25 @@
             
             // 歌曲结束处理
             audioPlayer.addEventListener('ended', function() {
-                audioPlayer.currentTime = 0;
+                // 切换到下一首歌
+                currentSongIndex = (currentSongIndex + 1) % songs.length;
+                updateSongInfo();
+                audioPlayer.load(); // 重新加载音频
                 audioPlayer.play();
+                playerContainer.classList.add('playing');
+                playPauseBtn.textContent = '⏸';
             });
             
             // 加载元数据
             audioPlayer.addEventListener('loadedmetadata', function() {
                 totalTimeEl.textContent = formatTime(audioPlayer.duration);
+            });
+            
+            // 音频加载完成后的处理
+            audioPlayer.addEventListener('canplay', function() {
+                if (playerContainer.classList.contains('playing')) {
+                    audioPlayer.play();
+                }
             });
             
             // 阻止事件冒泡
@@ -207,28 +245,6 @@
             document.addEventListener('mouseup', function() {
                 isDragging = false;
                 playerContainer.style.cursor = 'default';
-            });
-
-            // === 2. 图片点击跳转视频页面（放在末尾） ===
-            const images = document.querySelectorAll('#box img');
-            images.forEach(img => {
-                img.style.cursor = 'pointer';
-                img.addEventListener('click', function() {
-                    // 保存当前音频状态
-                    const audioData = {
-                        isPlaying: !audioPlayer.paused,
-                        currentTime: audioPlayer.currentTime,
-                        volume: audioPlayer.volume
-                    };
-                    localStorage.setItem('audioState', JSON.stringify(audioData));
-                    
-                    // 暂停音频
-                    audioPlayer.pause();
-                    
-                    // 跳转到视频页面
-                    const videoSrc = this.getAttribute('data-video');
-                    window.location.href = `video.html?video=${encodeURIComponent(videoSrc)}`;
-                });
             });
         });
     </script>
